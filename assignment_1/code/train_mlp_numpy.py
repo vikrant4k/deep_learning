@@ -52,7 +52,7 @@ def accuracy(predictions, targets):
   predictions_index=np.argmax(predictions,axis=1)
   value_arr=predictions_index-targets_index
   matches=(value_arr==0).sum()
-  accur=matches/BATCH_SIZE_DEFAULT
+  accur=matches/EVAL_FREQ_DEFAULT
 
 
 
@@ -92,13 +92,13 @@ def train():
   glb.std_green=np.std(x_green)
   glb.std_blue=np.std(x_blue)
   entropy_sum_list=[]
-  for k in range(0,300):
+  for k in range(0,6):
       entropies = []
       cifar10 = cifar10_utils.get_cifar10(
           '/home/vik1/Downloads/subj/deep_learning/uvadlc_practicals_2018/assignment_1/code/cifar10/cifar-10-batches-py')
       for i in range(0, 250):
           x, y = cifar10['train'].next_batch(BATCH_SIZE_DEFAULT)
-          x[:,0,:,:]=(x[:,0,:,:]-glb.mean_red)/(glb.std_red*glb.std_red)
+          x[:,0,:,:]=(x[:,0,:,:]-glb.mean_red)/(glb.std_red*glb.std_red )
           x[:, 1, :, :] = (x[:, 1, :, :] - glb.mean_green) / (glb.std_green * glb.std_green)
           x[:, 2, :, :] = (x[:, 2, :, :] - glb.mean_blue) / (glb.std_blue * glb.std_blue)
           x = x.reshape((BATCH_SIZE_DEFAULT, 32 * 32 * 3))
@@ -106,8 +106,8 @@ def train():
           prob, dict_layer = mlp.forward(x)
           dict_layer["true_prob"] = y
           entropies.append(mlp.calc_entropy(dict_layer))
-          delta_w, delta_b = mlp.backward(dict_layer,BATCH_SIZE_DEFAULT)
-          mlp.sgd(delta_w, delta_b, LEARNING_RATE_DEFAULT)
+          delta_w, delta_b,delta_gamma, delta_beta= mlp.backward(dict_layer,BATCH_SIZE_DEFAULT)
+          mlp.sgd(delta_w, delta_b, LEARNING_RATE_DEFAULT,delta_gamma, delta_beta)
       entropy_sum = sum(entropies)
       print(k,entropy_sum)
       entropy_sum_list.append(entropy_sum)
@@ -120,11 +120,11 @@ def test(data_type,num_times):
         '/home/vik1/Downloads/subj/deep_learning/uvadlc_practicals_2018/assignment_1/code/cifar10/cifar-10-batches-py')
     accu=[]
     for i in range(0, num_times):
-        x, y = cifar10[data_type].next_batch(BATCH_SIZE_DEFAULT)
+        x, y = cifar10[data_type].next_batch(EVAL_FREQ_DEFAULT)
         x[:, 0, :, :] = (x[:, 0, :, :] - glb.mean_red) / (glb.std_red * glb.std_red)
         x[:, 1, :, :] = (x[:, 1, :, :] - glb.mean_green) / (glb.std_green * glb.std_green)
         x[:, 2, :, :] = (x[:, 2, :, :] - glb.mean_blue) / (glb.std_blue * glb.std_blue)
-        x = x.reshape((200, 32 * 32 * 3))
+        x = x.reshape((EVAL_FREQ_DEFAULT, 32 * 32 * 3))
         prob, dict_layer = glb.mlp.forward(x)
         acc=accuracy(prob,y)
         print(acc)
@@ -153,8 +153,8 @@ def main():
 
   # Run the training operation
   train()
-  test("train",250)
-  test("test", 50)
+  ##test("train",500)
+  test("test", 100)
 
 if __name__ == '__main__':
   # Command line arguments

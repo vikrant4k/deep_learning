@@ -56,11 +56,12 @@ class MLP(nn.Module):
     x=self.linear1(x)
     out_x=F.relu(x)
     input_in_2=self.linear2(out)
+    print(input_in_2.shape)
     out=F.softmax(input_in_2)
 
     return out
 
-"""
+
 import torch
 
 
@@ -76,8 +77,8 @@ class TwoLayerNet(torch.nn.Module):
         out_x = F.relu(x)
         y_pred = self.linear2(out_x)
         out=F.softmax(y_pred)
+        print(out.shape)
         return out
 
 
 
-"""

@@ -78,7 +78,7 @@ def train():
   else:
     dnn_hidden_units = []
 
-  glb.net=TwoLayerNet(1,1,1)
+  glb.net=MLP(1,1,1)
   criterion = nn.CrossEntropyLoss()
   optimizer = optim.SGD(glb.net.parameters(), lr=0.002, momentum=0.0)
   cifar10 = cifar10_utils.get_cifar10(
@@ -101,9 +101,9 @@ def train():
       running_loss=0
       for i in range(0, 250):
           x, y = cifar10['train'].next_batch(200)
-          x[:, 0, :, :] = (x[:, 0, :, :] - glb.mean_red) / (glb.std_red * glb.std_red)
-          x[:, 1, :, :] = (x[:, 1, :, :] - glb.mean_green) / (glb.std_green * glb.std_green)
-          x[:, 2, :, :] = (x[:, 2, :, :] - glb.mean_blue) / (glb.std_blue * glb.std_blue)
+          ##x[:, 0, :, :] = (x[:, 0, :, :] - glb.mean_red) / (glb.std_red * glb.std_red)
+          ##x[:, 1, :, :] = (x[:, 1, :, :] - glb.mean_green) / (glb.std_green * glb.std_green)
+          ##x[:, 2, :, :] = (x[:, 2, :, :] - glb.mean_blue) / (glb.std_blue * glb.std_blue)
           x = x.reshape((200, 32 * 32 * 3))
           x = torch.from_numpy(x)
           y=torch.from_numpy(y)
