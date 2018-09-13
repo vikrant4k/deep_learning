@@ -163,7 +163,6 @@ class DataSet(object):
     self._index_in_epoch += batch_size
     if self._index_in_epoch > self._num_examples:
       self._epochs_completed += 1
-
       perm = np.arange(self._num_examples)
       np.random.shuffle(perm)
       self._images = self._images[perm]

@@ -52,7 +52,7 @@ def accuracy(predictions, targets):
   predictions_index = np.argmax(predictions, axis=1)
   value_arr = predictions_index - targets_index
   matches = (value_arr == 0).sum()
-  accur = matches / BATCH_SIZE_DEFAULT
+  accur = matches / len(targets_index)
 
   return accur
 
@@ -123,11 +123,11 @@ def test(data_type,num_times):
         '/home/vik1/Downloads/subj/deep_learning/uvadlc_practicals_2018/assignment_1/code/cifar10/cifar-10-batches-py')
     accu=[]
     for i in range(0, num_times):
-        x, y = cifar10[data_type].next_batch(BATCH_SIZE_DEFAULT)
+        x, y = cifar10[data_type].next_batch(EVAL_FREQ_DEFAULT)
         x[:, 0, :, :] = (x[:, 0, :, :] - glb.mean_red) / (glb.std_red * glb.std_red)
         x[:, 1, :, :] = (x[:, 1, :, :] - glb.mean_green) / (glb.std_green * glb.std_green)
         x[:, 2, :, :] = (x[:, 2, :, :] - glb.mean_blue) / (glb.std_blue * glb.std_blue)
-        x = x.reshape((200, 32 * 32 * 3))
+        x = x.reshape((EVAL_FREQ_DEFAULT, 32 * 32 * 3))
         x = torch.from_numpy(x)
         output = glb.net(x)
         output=output.detach().numpy()
@@ -160,7 +160,7 @@ def main():
 
   # Run the training operation
   train()
-  test("test",50)
+  test("test",100)
 
 if __name__ == '__main__':
   # Command line arguments
