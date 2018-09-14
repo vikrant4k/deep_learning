@@ -32,6 +32,7 @@ class MLP(object):
     TODO:
     Implement initialization of the network.
     """
+    """
     self.n_hidden=n_hidden
     self.n_classes=n_classes
     self.hidden_layers=len(n_hidden)
@@ -56,6 +57,15 @@ class MLP(object):
     self.biases.append(bias_arr)
     weight_arr=np.random.randn(self.n_hidden[self.hidden_layers-1],n_classes[0])*np.sqrt(2/n_classes[0])
     self.weights.append(weight_arr)
+    """
+    self.modules=[]
+
+    self.modules.append(LinearModule(self.n_inputs[1],n_hidden[0]))
+    self.modules.append(ReLUModule())
+    self.modules.append(LinearModule(self.n_hidden[0],n_classes[0]))
+    self.modules.append(SoftMaxModule())
+    self.modules.append(CrossEntropyModule())
+
     print("Initlialization done")
 
 
@@ -70,6 +80,7 @@ class MLP(object):
       return x
 
   def softmax(self,output):
+      print(output.shape)
       for i in range(0,output.shape[0]):
           ma=np.max(output[i,:])
           output[i,:]=np.subtract(output[i,:],ma);
@@ -92,6 +103,7 @@ class MLP(object):
     
     TODO:
     Implement forward pass of the network.
+    """
     """
     dict_layer={}
     last_layer_input=x;
@@ -124,6 +136,12 @@ class MLP(object):
     prob=self.softmax(z_out)
     dict_layer["prob"]=prob
     return prob,dict_layer
+    """
+    for i in range(0,len(self.modules)):
+        output=self.modules[i].forward(x)
+        x=output
+    return x
+
 
   def backward(self, dout,batch_size):
     """
@@ -134,6 +152,7 @@ class MLP(object):
     
     TODO:
     Implement backward pass of the network.
+    """
     """
     delta_w=[]
     delta_b=[]
@@ -172,6 +191,13 @@ class MLP(object):
 
     return delta_w,delta_b
     ##return delta_w, delta_b, delta_gamma, delta_beta
+    """
+    le=len(self.modules)-1
+    while(le>=0):
+        new_dout=self.modules[le].backward(dout)
+        dout=new_dout
+        le=le-1
+    return dout
 
 
   def sgd(self,delta_w,delta_b,lr):

@@ -102,7 +102,6 @@ class TestLayers(unittest.TestCase):
       dw = layer.grads['weight']
       dx_num = eval_numerical_gradient_array(lambda xx: layer.forward(xx), x, dout)
       dw_num = eval_numerical_gradient_array(lambda w: layer.forward(x), layer.params['weight'], dout)
-
       self.assertLess(rel_error(dx, dx_num), rel_error_max)
       self.assertLess(rel_error(dw, dw_num), rel_error_max)
 
@@ -115,12 +114,13 @@ class TestLayers(unittest.TestCase):
       D = np.random.choice(range(1, 100))
       x = np.random.randn(N, D)
       dout = np.random.randn(*x.shape)
-
       layer = ReLUModule()
       
       out = layer.forward(x)
       dx = layer.backward(dout)
       dx_num = eval_numerical_gradient_array(lambda xx: layer.forward(xx), x, dout)
+
+
 
       self.assertLess(rel_error(dx, dx_num), rel_error_max)
   
@@ -138,8 +138,8 @@ class TestLayers(unittest.TestCase):
       
       out = layer.forward(x)
       dx = layer.backward(dout)
-      dx_num = eval_numerical_gradient_array(lambda xx: layer.forward(xx), x, dout)
 
+      dx_num = eval_numerical_gradient_array(lambda xx: layer.forward(xx), x, dout)
       self.assertLess(rel_error(dx, dx_num), rel_error_max)
 
 

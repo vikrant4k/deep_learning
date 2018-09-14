@@ -9,7 +9,7 @@ from __future__ import print_function
 import argparse
 import numpy as np
 import os
-from mlp_pytorch import MLP
+##from mlp_pytorch import MLP
 from mlp_pytorch import TwoLayerNet
 import cifar10_utils
 from GlobalVariables import glb
@@ -78,9 +78,11 @@ def train():
   else:
     dnn_hidden_units = []
 
-  glb.net=MLP(1,1,1)
+  glb.net=TwoLayerNet(3*32*32,[100],10)
+  glb.net.cuda()
   criterion = nn.CrossEntropyLoss()
-  optimizer = optim.SGD(glb.net.parameters(), lr=0.002, momentum=0.0)
+  ##optimizer = optim.SGD(glb.net.parameters(), lr=0.008, momentum=0.9)
+  optimizer = optim.Adagrad(glb.net.parameters(),lr=0.01,weight_decay=0.001)
   cifar10 = cifar10_utils.get_cifar10(
       '/home/vik1/Downloads/subj/deep_learning/uvadlc_practicals_2018/assignment_1/code/cifar10/cifar-10-batches-py')
   x, y = cifar10['train'].next_batch(50000)
@@ -94,20 +96,22 @@ def train():
   glb.std_green = np.std(x_green)
   glb.std_blue = np.std(x_blue)
   entropy_sum_list = []
-  for epoch in range(0, 40):
+  for epoch in range(0, 14):
       entropies = []
       cifar10 = cifar10_utils.get_cifar10(
           '/home/vik1/Downloads/subj/deep_learning/uvadlc_practicals_2018/assignment_1/code/cifar10/cifar-10-batches-py')
       running_loss=0
       for i in range(0, 250):
           x, y = cifar10['train'].next_batch(200)
-          ##x[:, 0, :, :] = (x[:, 0, :, :] - glb.mean_red) / (glb.std_red * glb.std_red)
-          ##x[:, 1, :, :] = (x[:, 1, :, :] - glb.mean_green) / (glb.std_green * glb.std_green)
-          ##x[:, 2, :, :] = (x[:, 2, :, :] - glb.mean_blue) / (glb.std_blue * glb.std_blue)
+          x[:, 0, :, :] = (x[:, 0, :, :] - glb.mean_red) / (glb.std_red )
+          x[:, 1, :, :] = (x[:, 1, :, :] - glb.mean_green) / (glb.std_green )
+          x[:, 2, :, :] = (x[:, 2, :, :] - glb.mean_blue) / (glb.std_blue )
           x = x.reshape((200, 32 * 32 * 3))
           x = torch.from_numpy(x)
+          x=x.cuda()
           y=torch.from_numpy(y)
           y=y.type(torch.LongTensor)
+          y=y.cuda()
           optimizer.zero_grad()
           # forward + backward + optimize
           outputs = glb.net(x)
@@ -124,14 +128,15 @@ def test(data_type,num_times):
     accu=[]
     for i in range(0, num_times):
         x, y = cifar10[data_type].next_batch(EVAL_FREQ_DEFAULT)
-        x[:, 0, :, :] = (x[:, 0, :, :] - glb.mean_red) / (glb.std_red * glb.std_red)
-        x[:, 1, :, :] = (x[:, 1, :, :] - glb.mean_green) / (glb.std_green * glb.std_green)
-        x[:, 2, :, :] = (x[:, 2, :, :] - glb.mean_blue) / (glb.std_blue * glb.std_blue)
+        x[:, 0, :, :] = (x[:, 0, :, :] - glb.mean_red) / (glb.std_red )
+        x[:, 1, :, :] = (x[:, 1, :, :] - glb.mean_green) / (glb.std_green )
+        x[:, 2, :, :] = (x[:, 2, :, :] - glb.mean_blue) / (glb.std_blue)
         x = x.reshape((EVAL_FREQ_DEFAULT, 32 * 32 * 3))
         x = torch.from_numpy(x)
+        x=x.cuda()
         output = glb.net(x)
+        output=output.cpu()
         output=output.detach().numpy()
-        print(output.shape,y.shape)
         acc=accuracy(output,y)
         print(acc)
         accu.append(acc)

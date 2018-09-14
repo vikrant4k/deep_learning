@@ -70,15 +70,20 @@ class TwoLayerNet(torch.nn.Module):
         
         super(TwoLayerNet, self).__init__()
         self.linear1 = torch.nn.Linear(3*32*32, 100)
-        self.linear2 = torch.nn.Linear(100, 10)
+        self.linear2=torch.nn.Linear(100,200)
+        self.linear3=torch.nn.Linear(200,100)
+        self.linear4 = torch.nn.Linear(100, 10)
+
 
     def forward(self, x):
         x = self.linear1(x)
         out_x = F.relu(x)
-        y_pred = self.linear2(out_x)
-        out=F.softmax(y_pred)
-        print(out.shape)
-        return out
+        out_x=F.relu(self.linear3(F.relu(self.linear2(out_x))))
+        ##out_x=F.relu(self.linear2(out_x))
+        y_pred = self.linear4(out_x)
+        ##out=F.softmax(y_pred)
+        ##print(out.shape)
+        return y_pred
 
 
 

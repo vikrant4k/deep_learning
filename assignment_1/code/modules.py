@@ -28,7 +28,12 @@ class LinearModule(object):
     #######################
     self.params = {'weight': None, 'bias': None}
     self.grads = {'weight': None, 'bias': None}
-    raise NotImplementedError
+    weight_arr = np.random.randn(in_features, out_features) * 0.0001
+    bias_arr = np.zeros((1, out_features))
+    self.params['weight']=weight_arr
+    self.params['bias']=bias_arr
+    self.grads['weight']=np.zeros((in_features, out_features))
+    self.grads['bias']=np.zeros((1,out_features))
     ########################
     # END OF YOUR CODE    #
     #######################
@@ -47,16 +52,18 @@ class LinearModule(object):
     
     Hint: You can store intermediate variables inside the object. They can be used in backward pass computation.                                                           #
     """
-    
+    self.x=x
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    raise NotImplementedError
+    h_in = np.dot(x, self.params['weight'])
+    h_in = np.add(h_in,self.params['bias'])
     ########################
     # END OF YOUR CODE    #
     #######################
+    self.out=h_in
 
-    return out
+    return h_in
 
   def backward(self, dout):
     """
@@ -75,17 +82,22 @@ class LinearModule(object):
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    raise NotImplementedError
+    #delta_last_layer = np.multiply(delta_last_layer, relu_derivative)
+    delta_w=np.dot(self.x.T,dout)
+    delta_b=np.sum(dout, axis=1)
+    self.grads['weight']=delta_w
+    self.grads['bias']=delta_b
+    dout = np.dot(dout, self.params['weight'].T)
     ########################
     # END OF YOUR CODE    #
     #######################
-    
-    return dx
+    return dout
 
 class ReLUModule(object):
   """
   ReLU activation module.
   """
+
   def forward(self, x):
     """
     Forward pass.
@@ -104,12 +116,13 @@ class ReLUModule(object):
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    raise NotImplementedError
+
+    self.x=np.maximum(x,0)
+    return self.x
     ########################
     # END OF YOUR CODE    #
     #######################
 
-    return out
 
   def backward(self, dout):
     """
@@ -127,18 +140,21 @@ class ReLUModule(object):
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    raise NotImplementedError
+    derv_relu=self.x.copy()
+    derv_relu[derv_relu>0]=1.0
+    derv_relu[derv_relu<=0]=0
+    derv_relu=np.multiply(dout,derv_relu)
     ########################
     # END OF YOUR CODE    #
     #######################    
 
-    return dx
+    return derv_relu
 
 class SoftMaxModule(object):
   """
   Softmax activation module.
   """
-  def forward(self, x):
+  def forward(self, output):
     """
     Forward pass.
     Args:
@@ -156,12 +172,19 @@ class SoftMaxModule(object):
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    raise NotImplementedError
+    for i in range(0, output.shape[1]):
+        ma = np.max(output[:, i])
+        output[:, i] = np.subtract(output[:,i], ma);
+    output = np.exp(output)
+    sum = np.sum(output, axis=0)
+    for i in range(0, output.shape[1]):
+        output[:,i] = output[:,i]/sum[i]
+
     ########################
     # END OF YOUR CODE    #
     #######################
-
-    return out
+    self.output=output
+    return output
 
   def backward(self, dout):
     """
@@ -175,16 +198,21 @@ class SoftMaxModule(object):
     TODO:
     Implement backward pass of the module.
     """
-
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    raise NotImplementedError
+    delta=np.zeros(dout.shape)
+    for i in range(0,dout.shape[1]):
+        dx = self.output[:,i].reshape(-1, 1)
+        dx=np.diagflat(dx) - np.dot(dx, dx.T)
+        dy=np.dot(dx,dout[:,i])
+        delta[:,i]=dy
+
     ########################
     # END OF YOUR CODE    #
     #######################
-
-    return dx
+    ##dx=np.multiply(dx,dout)
+    return delta
 
 class CrossEntropyModule(object):
   """
@@ -207,12 +235,18 @@ class CrossEntropyModule(object):
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    raise NotImplementedError
+    N = y.shape[0]
+    true_prob = y
+    true_prob = -true_prob
+    prob = x
+    prob = np.log(prob)
+    out = np.multiply(true_prob, prob)
+    sum = np.sum(out)/N
     ########################
     # END OF YOUR CODE    #
     #######################
 
-    return out
+    return sum
 
   def backward(self, x, y):
     """
@@ -231,9 +265,12 @@ class CrossEntropyModule(object):
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    raise NotImplementedError
+    y=-y
+    dx=np.zeros(y.shape)
+    for i in range(0,len(y)):
+        dx[i,:]=y[i,:]/x[i,:]
     ########################
     # END OF YOUR CODE    #
     #######################
-
+    dx=dx/len(y)
     return dx
