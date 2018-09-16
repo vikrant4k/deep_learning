@@ -80,15 +80,15 @@ def train():
   glb.net=TwoLayerNet(3*32*32,[100],10)
   glb.net.cuda()
   criterion = nn.CrossEntropyLoss()
-  optimizer = optim.SGD(glb.net.parameters(), lr=0.002)
-  ##optimizer = optim.Adagrad(glb.net.parameters(),lr=0.01,weight_decay=0.001)
+  ##optimizer = optim.SGD(glb.net.parameters(), lr=LEARNING_RATE_DEFAULT)
+  optimizer = optim.Adagrad(glb.net.parameters(),lr=0.01,weight_decay=0.001)
   entropy_sum_list = []
   entropies = []
   accuracies = []
   cifar10 = cifar10_utils.get_cifar10(
       '/home/vik1/Downloads/subj/deep_learning/uvadlc_practicals_2018/assignment_1/code/cifar10/cifar-10-batches-py')
   running_loss = 0
-  for i in range(1, 1501):
+  for i in range(1, 2201):
       x, y = cifar10['train'].next_batch(BATCH_SIZE_DEFAULT)
       x = x.reshape((BATCH_SIZE_DEFAULT, 32 * 32 * 3))
       x = torch.from_numpy(x)
@@ -104,8 +104,8 @@ def train():
       optimizer.step()
       # print statistics
       running_loss += loss.item()
-      if (i % 100 == 0):
-          acc = test("test", 100)
+      if (i % EVAL_FREQ_DEFAULT == 0):
+          acc = test("test", 50)
           print(i, running_loss,acc)
           entropy_sum_list.append(running_loss)
           running_loss=0
@@ -129,6 +129,8 @@ def test(data_type,num_times):
         x = torch.from_numpy(x)
         x=x.cuda()
         output = glb.net(x)
+        softmax = torch.nn.Softmax(1)
+        x = softmax(output)
         output=output.cpu()
         output=output.detach().numpy()
         acc=accuracy(output,y)
