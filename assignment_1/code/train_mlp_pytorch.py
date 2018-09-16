@@ -16,6 +16,7 @@ from GlobalVariables import glb
 import torch.optim as optim
 import torch.nn as nn
 import torch
+import matplotlib.pyplot as plt
 # Default constants
 DNN_HIDDEN_UNITS_DEFAULT = '100'
 LEARNING_RATE_DEFAULT = 2e-3
@@ -54,7 +55,6 @@ def accuracy(predictions, targets):
   matches = (value_arr == 0).sum()
   accur = matches / len(targets_index)
 
-  return accur
 
   return accur
 
@@ -77,71 +77,64 @@ def train():
     dnn_hidden_units = [int(dnn_hidden_unit_) for dnn_hidden_unit_ in dnn_hidden_units]
   else:
     dnn_hidden_units = []
-
   glb.net=TwoLayerNet(3*32*32,[100],10)
   glb.net.cuda()
   criterion = nn.CrossEntropyLoss()
-  ##optimizer = optim.SGD(glb.net.parameters(), lr=0.008, momentum=0.9)
-  optimizer = optim.Adagrad(glb.net.parameters(),lr=0.01,weight_decay=0.001)
+  optimizer = optim.SGD(glb.net.parameters(), lr=0.002)
+  ##optimizer = optim.Adagrad(glb.net.parameters(),lr=0.01,weight_decay=0.001)
+  entropy_sum_list = []
+  entropies = []
+  accuracies = []
   cifar10 = cifar10_utils.get_cifar10(
       '/home/vik1/Downloads/subj/deep_learning/uvadlc_practicals_2018/assignment_1/code/cifar10/cifar-10-batches-py')
-  x, y = cifar10['train'].next_batch(50000)
-  x_red = x[:, 0, :, :]
-  x_green = x[:, 1, :, :]
-  x_blue = x[:, 2, :, :]
-  glb.mean_red = np.mean(x_red)
-  glb.mean_blue = np.mean(x_blue)
-  glb.mean_green = np.mean(x_green)
-  glb.std_red = np.std(x_red)
-  glb.std_green = np.std(x_green)
-  glb.std_blue = np.std(x_blue)
-  entropy_sum_list = []
-  for epoch in range(0, 14):
-      entropies = []
-      cifar10 = cifar10_utils.get_cifar10(
-          '/home/vik1/Downloads/subj/deep_learning/uvadlc_practicals_2018/assignment_1/code/cifar10/cifar-10-batches-py')
-      running_loss=0
-      for i in range(0, 250):
-          x, y = cifar10['train'].next_batch(200)
-          x[:, 0, :, :] = (x[:, 0, :, :] - glb.mean_red) / (glb.std_red )
-          x[:, 1, :, :] = (x[:, 1, :, :] - glb.mean_green) / (glb.std_green )
-          x[:, 2, :, :] = (x[:, 2, :, :] - glb.mean_blue) / (glb.std_blue )
-          x = x.reshape((200, 32 * 32 * 3))
-          x = torch.from_numpy(x)
-          x=x.cuda()
-          y=torch.from_numpy(y)
-          y=y.type(torch.LongTensor)
-          y=y.cuda()
-          optimizer.zero_grad()
-          # forward + backward + optimize
-          outputs = glb.net(x)
-          loss = criterion(outputs, torch.max(y, 1)[1])
-          loss.backward()
-          optimizer.step()
-          # print statistics
-          running_loss += loss.item()
-      print(running_loss)
+  running_loss = 0
+  for i in range(1, 1501):
+      x, y = cifar10['train'].next_batch(BATCH_SIZE_DEFAULT)
+      x = x.reshape((BATCH_SIZE_DEFAULT, 32 * 32 * 3))
+      x = torch.from_numpy(x)
+      x = x.cuda()
+      y = torch.from_numpy(y)
+      y = y.type(torch.LongTensor)
+      y = y.cuda()
+      optimizer.zero_grad()
+      # forward + backward + optimize
+      outputs = glb.net(x)
+      loss = criterion(outputs, torch.max(y, 1)[1])
+      loss.backward()
+      optimizer.step()
+      # print statistics
+      running_loss += loss.item()
+      if (i % 100 == 0):
+          acc = test("test", 100)
+          print(i, running_loss,acc)
+          entropy_sum_list.append(running_loss)
+          running_loss=0
+          accuracies.append(acc)
+  print(entropy_sum_list)
+  print(accuracies)
+  plt.plot(entropy_sum_list, 'r-')
+  plt.show()
+  plt.close()
+  plt.plot(accuracies, 'r-')
+  plt.show()
+  print("done")
 
 def test(data_type,num_times):
     cifar10 = cifar10_utils.get_cifar10(
         '/home/vik1/Downloads/subj/deep_learning/uvadlc_practicals_2018/assignment_1/code/cifar10/cifar-10-batches-py')
     accu=[]
     for i in range(0, num_times):
-        x, y = cifar10[data_type].next_batch(EVAL_FREQ_DEFAULT)
-        x[:, 0, :, :] = (x[:, 0, :, :] - glb.mean_red) / (glb.std_red )
-        x[:, 1, :, :] = (x[:, 1, :, :] - glb.mean_green) / (glb.std_green )
-        x[:, 2, :, :] = (x[:, 2, :, :] - glb.mean_blue) / (glb.std_blue)
-        x = x.reshape((EVAL_FREQ_DEFAULT, 32 * 32 * 3))
+        x, y = cifar10[data_type].next_batch(BATCH_SIZE_DEFAULT)
+        x = x.reshape((BATCH_SIZE_DEFAULT, 32 * 32 * 3))
         x = torch.from_numpy(x)
         x=x.cuda()
         output = glb.net(x)
         output=output.cpu()
         output=output.detach().numpy()
         acc=accuracy(output,y)
-        print(acc)
         accu.append(acc)
     full_acc=sum(accu)/len(accu)
-    print("Full Accuracy",full_acc)
+    return  full_acc
 
 
 
@@ -165,7 +158,7 @@ def main():
 
   # Run the training operation
   train()
-  test("test",100)
+  ##test("test",100)
 
 if __name__ == '__main__':
   # Command line arguments

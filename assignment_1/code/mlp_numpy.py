@@ -59,7 +59,10 @@ class MLP(object):
     self.weights.append(weight_arr)
     """
     self.modules=[]
-
+    self.n_hidden = n_hidden
+    self.n_classes = n_classes
+    self.hidden_layers = len(n_hidden)
+    self.n_inputs=n_inputs
     self.modules.append(LinearModule(self.n_inputs[1],n_hidden[0]))
     self.modules.append(ReLUModule())
     self.modules.append(LinearModule(self.n_hidden[0],n_classes[0]))
@@ -137,13 +140,13 @@ class MLP(object):
     dict_layer["prob"]=prob
     return prob,dict_layer
     """
-    for i in range(0,len(self.modules)):
+    for i in range(0,len(self.modules)-1):
         output=self.modules[i].forward(x)
         x=output
     return x
 
 
-  def backward(self, dout,batch_size):
+  def backward(self, dout,y,batch_size):
     """
     Performs backward pass given the gradients of the loss. 
 
@@ -193,6 +196,8 @@ class MLP(object):
     ##return delta_w, delta_b, delta_gamma, delta_beta
     """
     le=len(self.modules)-1
+    dout = self.modules[le].backward(dout,y)
+    le-=1
     while(le>=0):
         new_dout=self.modules[le].backward(dout)
         dout=new_dout
@@ -200,24 +205,25 @@ class MLP(object):
     return dout
 
 
-  def sgd(self,delta_w,delta_b,lr):
+  def sgd(self,lr):
+      """"
       delta_index=0
       layer_index=self.hidden_layers
-      ##self.gamma_arr-=lr*delta_gamma
-      ##self.beta_arr-=lr*delta_beta
+
       while(layer_index>=0):
           self.weights[layer_index] -=  (lr * delta_w[delta_index])
           self.biases[layer_index] -= (lr * delta_b[delta_index])
           layer_index=layer_index-1
           delta_index=delta_index+1
+      """
+      le=len(self.modules)
+      for i in range(0,le):
+          if(isinstance(self.modules[i],LinearModule)):
+              self.modules[i].params['weight']-=lr*self.modules[i].grads['weight']
+              self.modules[i].params['bias'] -= lr * self.modules[i].grads['bias']
 
 
-  def calc_entropy(self,dic):
-      true_prob=dic["true_prob"]
-      true_prob=-true_prob
-      prob=dic["prob"]
-      prob=np.log2(prob)
-      out=np.multiply(true_prob,prob)
-      sum=np.sum(out)
-
-      return sum/200
+  def calc_entropy(self,prob,y):
+      index = len(self.modules) - 1
+      output = (self.modules[index]).forward(prob, y)
+      return output

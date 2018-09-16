@@ -47,7 +47,6 @@ def accuracy(predictions, targets):
   """
 
   accur=0.0
-  ##print(targets.shape)
   targets_index=np.argmax(targets,axis=1)
   predictions_index=np.argmax(predictions,axis=1)
   value_arr=predictions_index-targets_index
@@ -92,26 +91,40 @@ def train():
   glb.std_green=np.std(x_green)
   glb.std_blue=np.std(x_blue)
   entropy_sum_list=[]
-  for k in range(0,6):
-      entropies = []
-      cifar10 = cifar10_utils.get_cifar10(
-          '/home/vik1/Downloads/subj/deep_learning/uvadlc_practicals_2018/assignment_1/code/cifar10/cifar-10-batches-py')
-      for i in range(0, 250):
-          x, y = cifar10['train'].next_batch(BATCH_SIZE_DEFAULT)
-          x[:,0,:,:]=(x[:,0,:,:]-glb.mean_red)/(glb.std_red )
-          x[:, 1, :, :] = (x[:, 1, :, :] - glb.mean_green) / (glb.std_green )
-          x[:, 2, :, :] = (x[:, 2, :, :] - glb.mean_blue) / (glb.std_blue)
-          x = x.reshape((BATCH_SIZE_DEFAULT, 32 * 32 * 3))
-          ##x = x / 2550
-          prob, dict_layer = mlp.forward(x)
-          dict_layer["true_prob"] = y
-          entropies.append(mlp.calc_entropy(dict_layer))
-          delta_w, delta_b= mlp.backward(dict_layer,BATCH_SIZE_DEFAULT)
-          mlp.sgd(delta_w, delta_b, LEARNING_RATE_DEFAULT)
-      entropy_sum = sum(entropies)
-      print(k,entropy_sum)
-      entropy_sum_list.append(entropy_sum)
+  entropies = []
+  accuracies=[]
+  cifar10 = cifar10_utils.get_cifar10(
+      '/home/vik1/Downloads/subj/deep_learning/uvadlc_practicals_2018/assignment_1/code/cifar10/cifar-10-batches-py')
+  for i in range(1, 1501):
+      x, y = cifar10['train'].next_batch(BATCH_SIZE_DEFAULT)
+      ##x[:,0,:,:]=(x[:,0,:,:]-glb.mean_red)/(glb.std_red )
+      ##x[:, 1, :, :] = (x[:, 1, :, :] - glb.mean_green) / (glb.std_green )
+      ##x[:, 2, :, :] = (x[:, 2, :, :] - glb.mean_blue) / (glb.std_blue)
+      x = x.reshape((BATCH_SIZE_DEFAULT, 32 * 32 * 3))
+      ##x = x / 2550
+      dout = mlp.forward(x)
+      ##dict_layer["true_prob"] = y
+      entropies.append(mlp.calc_entropy(dout, y))
+      dout = mlp.backward(dout, y, BATCH_SIZE_DEFAULT)
+      mlp.sgd(LEARNING_RATE_DEFAULT)
+      if (i % 100 == 0):
+          acc=test("test", 100)
+          entropy_sum = sum(entropies)
+          print(i, entropy_sum)
+          entropy_sum_list.append(entropy_sum)
+          entropies = []
+          accuracies.append(acc)
+
+
+
+      ##entropy_sum_list.append(entropy_sum)
   print(entropy_sum_list)
+  print(accuracies)
+  plt.plot(entropy_sum_list, 'r-')
+  plt.show()
+  plt.close()
+  plt.plot(accuracies, 'r-')
+  plt.show()
   print("done")
 
 
@@ -120,18 +133,18 @@ def test(data_type,num_times):
         '/home/vik1/Downloads/subj/deep_learning/uvadlc_practicals_2018/assignment_1/code/cifar10/cifar-10-batches-py')
     accu=[]
     for i in range(0, num_times):
-        x, y = cifar10[data_type].next_batch(EVAL_FREQ_DEFAULT)
+        x, y = cifar10[data_type].next_batch(BATCH_SIZE_DEFAULT)
         ##x=x/2550;
-        x[:, 0, :, :] = (x[:, 0, :, :] - glb.mean_red) / (glb.std_red )
-        x[:, 1, :, :] = (x[:, 1, :, :] - glb.mean_green) / (glb.std_green )
-        x[:, 2, :, :] = (x[:, 2, :, :] - glb.mean_blue) / (glb.std_blue)
-        x = x.reshape((EVAL_FREQ_DEFAULT, 32 * 32 * 3))
-        prob, dict_layer = glb.mlp.forward(x)
+        ##x[:, 0, :, :] = (x[:, 0, :, :] - glb.mean_red) / (glb.std_red )
+        ##x[:, 1, :, :] = (x[:, 1, :, :] - glb.mean_green) / (glb.std_green )
+        ##x[:, 2, :, :] = (x[:, 2, :, :] - glb.mean_blue) / (glb.std_blue)
+        x = x.reshape((BATCH_SIZE_DEFAULT, 32 * 32 * 3))
+        prob = glb.mlp.forward(x)
         acc=accuracy(prob,y)
-        print(acc)
+        ##print(acc)
         accu.append(acc)
     full_acc=sum(accu)/len(accu)
-    print("Full Accuracy",full_acc)
+    return full_acc
 
 
 
@@ -155,7 +168,7 @@ def main():
   # Run the training operation
   train()
   ##test("train",500)
-  test("test", 100)
+  ##test("test", 100)
 
 if __name__ == '__main__':
   # Command line arguments

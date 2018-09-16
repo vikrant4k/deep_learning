@@ -84,7 +84,7 @@ class LinearModule(object):
     #######################
     #delta_last_layer = np.multiply(delta_last_layer, relu_derivative)
     delta_w=np.dot(self.x.T,dout)
-    delta_b=np.sum(dout, axis=1)
+    delta_b=np.sum(dout, axis=0)
     self.grads['weight']=delta_w
     self.grads['bias']=delta_b
     dout = np.dot(dout, self.params['weight'].T)
@@ -172,13 +172,13 @@ class SoftMaxModule(object):
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    for i in range(0, output.shape[1]):
-        ma = np.max(output[:, i])
-        output[:, i] = np.subtract(output[:,i], ma);
+    ##for i in range(0, output.shape[0]):
+    ##    ma = np.max(output[i,:])
+    ##    output[i,:] = np.subtract(output[i,:], ma);
     output = np.exp(output)
-    sum = np.sum(output, axis=0)
-    for i in range(0, output.shape[1]):
-        output[:,i] = output[:,i]/sum[i]
+    sum = np.sum(output, axis=1)
+    for i in range(0, output.shape[0]):
+        output[i,:] = output[i,:]/sum[i]
 
     ########################
     # END OF YOUR CODE    #
@@ -201,12 +201,13 @@ class SoftMaxModule(object):
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    delta=np.zeros(dout.shape)
-    for i in range(0,dout.shape[1]):
-        dx = self.output[:,i].reshape(-1, 1)
+    delta=np.zeros(dout.shape,dtype=np.float64)
+    for i in range(0,dout.shape[0]):
+        dx = self.output[i,:].reshape(-1, 1)
+        diagonal_matrix=np.diagflat(dx)
         dx=np.diagflat(dx) - np.dot(dx, dx.T)
-        dy=np.dot(dx,dout[:,i])
-        delta[:,i]=dy
+        dy=np.dot(dx,dout[i,:])
+        delta[i,:]=dy
 
     ########################
     # END OF YOUR CODE    #
@@ -215,6 +216,9 @@ class SoftMaxModule(object):
     return delta
 
 class CrossEntropyModule(object):
+
+  def __init__(self):
+    self.data=0
   """
   Cross entropy loss module.
   """
@@ -245,7 +249,7 @@ class CrossEntropyModule(object):
     ########################
     # END OF YOUR CODE    #
     #######################
-
+    self.data = x
     return sum
 
   def backward(self, x, y):
@@ -268,7 +272,7 @@ class CrossEntropyModule(object):
     y=-y
     dx=np.zeros(y.shape)
     for i in range(0,len(y)):
-        dx[i,:]=y[i,:]/x[i,:]
+        dx[i,:]=y[i,:]/(x[i,:])
     ########################
     # END OF YOUR CODE    #
     #######################

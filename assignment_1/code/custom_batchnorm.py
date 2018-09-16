@@ -37,7 +37,8 @@ class CustomBatchNormAutograd(nn.Module):
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    raise NotImplementedError
+    self.gamma=torch.ones((1,n_neurons))
+    self.beta=torch.zeros((1,n_neurons))
     ########################
     # END OF YOUR CODE    #
     #######################
@@ -60,12 +61,16 @@ class CustomBatchNormAutograd(nn.Module):
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    raise NotImplementedError
+    mean=input.mean(dim=0,keepdim=True)
+    std=input.std(dim=0,keepdim=True,unbiased=False)
+    output=input-mean
+    output/=std
+
     ########################
     # END OF YOUR CODE    #
     #######################
 
-    return out
+    return output
 
 
 
@@ -114,12 +119,24 @@ class CustomBatchNormManualFunction(torch.autograd.Function):
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    raise NotImplementedError
+    ctx.input=input
+    ctx.gamma=gamma
+    ctx.beta=beta
+    mean = input.mean(dim=0, keepdim=True)
+    ctx.var = input.var(dim=0, keepdim=True,unbiased=False)
+    ctx.var=ctx.var+eps
+    ctx.input_mean = input - mean
+    ctx.var=torch.sqrt(ctx.var)
+    ctx.var=1/ctx.var
+    ctx.output = ctx.input_mean*ctx.var
+    y_output=gamma*ctx.output+beta
+
+    ##ctx.save_for_backword(input,output,gamma,beta,var)
     ########################
     # END OF YOUR CODE    #
     #######################
 
-    return out
+    return y_output
 
 
   @staticmethod
@@ -142,7 +159,19 @@ class CustomBatchNormManualFunction(torch.autograd.Function):
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    raise NotImplementedError
+    var_3_times=ctx.var*ctx.var*ctx.var
+    grad_beta=grad_output.sum(dim=0)
+    batch_size=grad_output.shape[0]
+    grad_gamma=(grad_output*ctx.output).sum(dim=0)
+    dxhat=grad_output*ctx.gamma
+    ##dx_sigma=(dxhat*(ctx.input_mean)*-0.5*var_3_times).sum(dim=0)
+    dx_sigma=(dxhat*-0.5*var_3_times*ctx.input_mean).sum(dim=0)
+    ##print(dx_sigma.shape)
+    ##dx_mu=(dxhat*-1*ctx.var).sum(dim=0)+dx_sigma*(((-2*(ctx.input_mean)).sum(dim=0))/batch_size)
+    dx_mu=(dxhat*(-1*ctx.var+(1/batch_size)*var_3_times*((ctx.input_mean).sum(dim=0)))).sum(dim=0)
+    ##dx_input=(dxhat*ctx.var)+dx_sigma*((2*(ctx.input_mean))/batch_size)+dx_mu/batch_size
+    dx_input=(dxhat*ctx.var+dx_mu/batch_size+(dx_sigma*2*ctx.input_mean)/batch_size)
+    grad_input=dx_input
     ########################
     # END OF YOUR CODE    #
     #######################
